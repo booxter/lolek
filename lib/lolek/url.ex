@@ -14,11 +14,8 @@ defmodule Lolek.Url do
 
       urls ->
         url = urls |> List.first() |> List.first()
-        normalized_url = normalize_for_allow_list(url)
 
-        allowed_urls_regex = Application.fetch_env!(:lolek, :allowed_urls_regex)
-
-        if Regex.match?(~r/#{allowed_urls_regex}/, normalized_url) do
+        if allowed_url?(url) do
           {:ok, url}
         else
           {:error, :no_url}
@@ -56,9 +53,19 @@ defmodule Lolek.Url do
     end
   end
 
-  @spec normalize_for_allow_list(String.t()) :: String.t()
-  defp normalize_for_allow_list(url) do
-    normalize_for_storage(url)
+  @spec allowed_url?(String.t()) :: boolean()
+  defp allowed_url?(url) do
+    allowed_urls_regex = Application.fetch_env!(:lolek, :allowed_urls_regex)
+
+    case URI.parse(url) do
+      %URI{scheme: scheme, host: host}
+      when scheme in ["http", "https"] and is_binary(host) ->
+        host = String.downcase(host)
+        Regex.match?(~r/(^|\.)(?:#{allowed_urls_regex})$/, host)
+
+      _ ->
+        false
+    end
   end
 
   @spec normalize_threads_host(String.t()) :: String.t()
