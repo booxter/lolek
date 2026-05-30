@@ -58,14 +58,34 @@ defmodule Lolek.Url do
     allowed_urls_regex = Application.fetch_env!(:lolek, :allowed_urls_regex)
 
     case URI.parse(url) do
-      %URI{scheme: scheme, host: host}
+      %URI{scheme: scheme, host: host} = uri
       when scheme in ["http", "https"] and is_binary(host) ->
-        host = String.downcase(host)
-        Regex.match?(~r/(^|\.)(?:#{allowed_urls_regex})$/, host)
+        allowed_url_regex = ~r{^(?:#{allowed_urls_regex})(?:$|/)}
+        uri |> normalize_for_allow_list() |> Enum.any?(&Regex.match?(allowed_url_regex, &1))
 
       _ ->
         false
     end
+  end
+
+  @spec normalize_for_allow_list(URI.t()) :: [String.t()]
+  defp normalize_for_allow_list(%URI{host: host, path: path}) do
+    path = String.downcase(path || "/")
+
+    host
+    |> String.downcase()
+    |> String.split(".")
+    |> host_suffixes()
+    |> Enum.map(&(&1 <> path))
+  end
+
+  @spec host_suffixes([String.t()]) :: [String.t()]
+  defp host_suffixes([]), do: []
+
+  defp host_suffixes([_last_label] = labels), do: [Enum.join(labels, ".")]
+
+  defp host_suffixes(labels) do
+    [Enum.join(labels, ".") | host_suffixes(tl(labels))]
   end
 
   @spec normalize_threads_host(String.t()) :: String.t()

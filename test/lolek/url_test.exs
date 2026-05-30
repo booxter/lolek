@@ -42,6 +42,25 @@ defmodule Lolek.UrlTest do
              Lolek.Url.extract_url("https://threads.com.example.com/@helga/post/1")
   end
 
+  test "supports path-specific allowlist entries" do
+    Application.put_env(:lolek, :allowed_urls_regex, "youtube\\.com/shorts")
+
+    assert {:ok, "https://www.youtube.com/shorts/example"} =
+             Lolek.Url.extract_url("https://www.youtube.com/shorts/example")
+
+    assert {:error, :no_url} =
+             Lolek.Url.extract_url("https://www.youtube.com/watch?v=example")
+  end
+
+  test "does not match path-specific allowlist entries from query strings" do
+    Application.put_env(:lolek, :allowed_urls_regex, "youtube\\.com/shorts")
+
+    assert {:error, :no_url} =
+             Lolek.Url.extract_url(
+               "https://example.com/watch?next=https://www.youtube.com/shorts/example"
+             )
+  end
+
   test "threads storage key ignores media path and query string" do
     canonical =
       Lolek.Url.to_folder_name("https://www.threads.com/@slothconservation/post/DXu0QIympQM")
