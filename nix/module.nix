@@ -9,7 +9,7 @@
 
 let
   cfg = config.services.lolek;
-  defaultAllowedHosts = [
+  defaultAllowedUrlPatterns = [
     "tiktok.com"
     "twitter.com"
     "facebook.com"
@@ -18,7 +18,7 @@ let
     "threads.net"
     "coub.com"
     "x.com"
-    "youtube.com"
+    "youtube.com/shorts"
   ];
   inherit (lib)
     mkEnableOption
@@ -89,12 +89,13 @@ in
       '';
     };
 
-    allowedHosts = mkOption {
-      type = types.listOf (types.strMatching "[A-Za-z0-9.-]+");
-      default = defaultAllowedHosts;
+    allowedUrlPatterns = mkOption {
+      type = types.listOf (types.strMatching "[A-Za-z0-9._/-]+");
+      default = defaultAllowedUrlPatterns;
       description = ''
-        Host suffixes accepted by the bot. Subdomains of these hosts are also
-        accepted by the application.
+        Host/path suffixes accepted by the bot. Subdomains of host-only entries
+        are also accepted by the application. Query strings and fragments are
+        ignored during matching.
       '';
     };
 
@@ -171,8 +172,8 @@ in
   config = mkIf cfg.enable {
     assertions = [
       {
-        assertion = cfg.allowedHosts != [ ];
-        message = "services.lolek.allowedHosts must not be empty.";
+        assertion = cfg.allowedUrlPatterns != [ ];
+        message = "services.lolek.allowedUrlPatterns must not be empty.";
       }
       {
         assertion =
@@ -232,7 +233,7 @@ in
         LOLEK_MAX_AUDIO_SIZE_TO_SEND_TO_TELEGRAM = toString cfg.maxAudioSizeToSendToTelegram;
         LOLEK_MAX_FILE_SIZE_TO_COMPRESS = toString cfg.maxFileSizeToCompress;
         LOLEK_MAX_DURATION_TO_COMPRESS = toString cfg.maxDurationToCompress;
-        LOLEK_ALLOWED_URLS_REGEX = lib.concatStringsSep "|" (map lib.escapeRegex cfg.allowedHosts);
+        LOLEK_ALLOWED_URLS_REGEX = lib.concatStringsSep "|" (map lib.escapeRegex cfg.allowedUrlPatterns);
         LOLEK_MAX_DOWNLOAD_TRIES = toString cfg.maxDownloadTries;
         LOLEK_START_DOWNLOAD_PAUSE = toString cfg.startDownloadPause;
         LOLEK_MAX_DOWNLOAD_PAUSE = toString cfg.maxDownloadPause;

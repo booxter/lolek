@@ -105,7 +105,7 @@ pkgs.testers.nixosTest {
         environmentFile = pkgs.writeText envFileName ''
           LOLEK_BOT_TOKEN=${fakeToken}
         '';
-        allowedHosts = [ fakeHost ];
+        allowedUrlPatterns = [ fakeHost ];
         maxDownloadDirSize = 0;
         maxDownloadTries = 1;
         startDownloadPause = 10;
